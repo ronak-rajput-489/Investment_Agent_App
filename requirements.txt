@@ -1,0 +1,12 @@
+langchain
+langgraph
+typing
+langchain_core
+langchain_openai
+python-dotenv
+langchain_community
+psycopg2
+sqlalchemy
+pypdf
+snowflake-sqlalchemy==1.5.1
+snowflake-connector-python==3.12.3
