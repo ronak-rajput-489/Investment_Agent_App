@@ -112,7 +112,10 @@ def categorize_risk(score):
         return 'Moderate'
     else:
         return 'High'
-    
+
+from sqlalchemy import text
+
+# ------------------- SEGMENT CUSTOMERS -------------------
 @tool
 def segment_customers(table_name: str) -> str:
     """
@@ -122,25 +125,37 @@ def segment_customers(table_name: str) -> str:
     Returns:
         A message confirming segmentation and showing sample output.
     """
-    # 🔹 Load table from schema (example: using SQLAlchemy)
-    #from sqlalchemy import create_engine
-    # engine = create_engine(
-    # f"snowflake://{snowflake_user}:{snowflake_pass}@{snowflake_acct}/"
-    # f"{snowflake_db}/{snowflake_schema}?warehouse={snowflake_wh}&role={snowflake_role}"
-    # )
-    query = f"SELECT * FROM {table_name}"
-    df_final = pd.read_sql(query, engine)
+    try:
+        query = f"SELECT * FROM {table_name}"
 
-    # Apply categorization
-    df_final['risk_appetite_class'] = df_final['risk_appetite'].apply(categorize_risk)
+        # ✅ Use SQLAlchemy connection for pandas
+        with engine.connect() as conn:
+            df_final = pd.read_sql_query(text(query), conn)
 
-    # Optionally save back to DB
-    df_final.to_sql(table_name + "_segmented", engine, if_exists="replace", index=False)
+        # Apply categorization
+        df_final["risk_appetite_class"] = df_final["risk_appetite"].apply(categorize_risk)
 
-    return f"Segmentation done ✅. Saved as {table_name}_segmented. Sample:\n{df_final[['customer_id','risk_appetite','risk_appetite_class']].head(5)}"
+        # ✅ Save back using engine.begin()
+        with engine.begin() as conn:
+            df_final.to_sql(
+                name=f"{table_name}_segmented",
+                con=conn,
+                if_exists="replace",
+                index=False,
+                method="multi",
+                chunksize=1000,
+            )
 
-################################################################################################################
+        return (
+            f"Segmentation done ✅. Saved as {table_name}_segmented. "
+            f"Sample:\n{df_final[['customer_id','risk_appetite','risk_appetite_class']].head(5)}"
+        )
 
+    except Exception as e:
+        return f"❌ Error in segment_customers: {e}"
+
+
+# ------------------- RECOMMEND PRODUCTS -------------------
 @tool
 def recommend_products(table_name: str) -> str:
     """
@@ -150,34 +165,112 @@ def recommend_products(table_name: str) -> str:
     Returns:
         A message confirming recommendations and showing sample output.
     """
+    try:
+        query = f"SELECT * FROM {table_name}"
 
-    # 🔹 Load table from schema
-    query = f"SELECT * FROM {table_name}"
-    df_final = pd.read_sql(query, engine)
+        # ✅ Use SQLAlchemy connection for pandas
+        with engine.connect() as conn:
+            df_final = pd.read_sql_query(text(query), conn)
 
-    # Check if segmentation already exists
-    if 'risk_appetite_class' not in df_final.columns:
-        raise ValueError("Table must already contain 'risk_appetite_class'. Run segment_customers first.")
+        # Ensure segmentation exists
+        if "risk_appetite_class" not in df_final.columns:
+            raise ValueError("Table must already contain 'risk_appetite_class'. Run segment_customers first.")
 
-    # Mapping dictionary (you can extend this easily)
-    product_mapping = {
-        "Low": "A – Investlink",
-        "Moderate": "A - Life Wealth Premier",
-        "High": "A - Life Infinite"
-    }
+        # Map products
+        product_mapping = {
+            "Low": "A – Investlink",
+            "Moderate": "A - Life Wealth Premier",
+            "High": "A - Life Infinite"
+        }
+        df_final["recommended_product"] = df_final["risk_appetite_class"].map(product_mapping)
 
-    # Apply mapping
-    df_final['recommended_product'] = df_final['risk_appetite_class'].map(product_mapping)
+        new_table = f"{table_name}_with_recommendations"
 
-    # Save back to DB (new table with recommendations)
-    new_table = table_name + "_with_recommendations"
-    df_final.to_sql(new_table, engine, if_exists="replace", index=False)
+        # ✅ Save back into Snowflake
+        with engine.begin() as conn:
+            df_final.to_sql(
+                name=new_table,
+                con=conn,
+                if_exists="replace",
+                index=False,
+                method="multi",
+                chunksize=1000,
+            )
 
-    return (
-        f"✅ Product recommendations added based on risk appetite. "
-        f"Saved as {new_table}. Sample:\n"
-        f"{df_final[['customer_id','risk_appetite_class','recommended_product']].head(5)}"
-    )
+        return (
+            f"✅ Product recommendations added based on risk appetite. "
+            f"Saved as {new_table}. Sample:\n"
+            f"{df_final[['customer_id','risk_appetite_class','recommended_product']].head(5)}"
+        )
+
+    except Exception as e:
+        return f"❌ Error in recommend_products: {e}"
+
+# @tool
+# def segment_customers(table_name: str) -> str:
+#     """
+#     Segments customers into Low, Moderate, High based on their risk_appetite score.
+#     Args:
+#         table_name: The name of the database table containing the customer data.
+#     Returns:
+#         A message confirming segmentation and showing sample output.
+#     """
+#     # 🔹 Load table from schema (example: using SQLAlchemy)
+#     #from sqlalchemy import create_engine
+#     # engine = create_engine(
+#     # f"snowflake://{snowflake_user}:{snowflake_pass}@{snowflake_acct}/"
+#     # f"{snowflake_db}/{snowflake_schema}?warehouse={snowflake_wh}&role={snowflake_role}"
+#     # )
+#     query = f"SELECT * FROM {table_name}"
+#     df_final = pd.read_sql(query, engine)
+
+#     # Apply categorization
+#     df_final['risk_appetite_class'] = df_final['risk_appetite'].apply(categorize_risk)
+
+#     # Optionally save back to DB
+#     df_final.to_sql(table_name + "_segmented", engine, if_exists="replace", index=False)
+
+#     return f"Segmentation done ✅. Saved as {table_name}_segmented. Sample:\n{df_final[['customer_id','risk_appetite','risk_appetite_class']].head(5)}"
+
+# ################################################################################################################
+
+# @tool
+# def recommend_products(table_name: str) -> str:
+#     """
+#     Recommends investment products for customers based on their risk_appetite_class.
+#     Args:
+#         table_name: The name of the database table containing the segmented customer data.
+#     Returns:
+#         A message confirming recommendations and showing sample output.
+#     """
+
+#     # 🔹 Load table from schema
+#     query = f"SELECT * FROM {table_name}"
+#     df_final = pd.read_sql(query, engine)
+
+#     # Check if segmentation already exists
+#     if 'risk_appetite_class' not in df_final.columns:
+#         raise ValueError("Table must already contain 'risk_appetite_class'. Run segment_customers first.")
+
+#     # Mapping dictionary (you can extend this easily)
+#     product_mapping = {
+#         "Low": "A – Investlink",
+#         "Moderate": "A - Life Wealth Premier",
+#         "High": "A - Life Infinite"
+#     }
+
+#     # Apply mapping
+#     df_final['recommended_product'] = df_final['risk_appetite_class'].map(product_mapping)
+
+#     # Save back to DB (new table with recommendations)
+#     new_table = table_name + "_with_recommendations"
+#     df_final.to_sql(new_table, engine, if_exists="replace", index=False)
+
+#     return (
+#         f"✅ Product recommendations added based on risk appetite. "
+#         f"Saved as {new_table}. Sample:\n"
+#         f"{df_final[['customer_id','risk_appetite_class','recommended_product']].head(5)}"
+#     )
 
 
 #################################################################################################################
@@ -337,5 +430,6 @@ graph.set_entry_point("agent")
 graph.add_conditional_edges("agent", should_continue, {"continue": "tools", "end": END})
 graph.add_edge("tools", "agent")
 app = graph.compile()
+
 
 ############################################################################################### 
