@@ -103,6 +103,12 @@ def rag_lookup(query: str) -> str:
     return rag_chain.run(query)
 
 ##################################################################################################################
+@tool
+def seg_cust() -> str:
+    """
+    Tool node that confirms customers have been segmented by risk appetite and prompts the user about viewing product suggestions.
+    """
+    return "The customers have been successfully segmented based on their risk appetite. Would you like to see product suggestions based on these segmented risk profiles?"
 
 # Example function to categorize
 def categorize_risk(score):
@@ -209,7 +215,7 @@ def recommend_products(table_name: str) -> str:
 
 #################################################################################################################
 
-tools = [run_raw_sql, run_select_sql, rag_lookup, segment_customers, recommend_products]
+tools = [run_raw_sql, run_select_sql, rag_lookup, seg_cust, recommend_products]
 
 #################################################################################################################
     
@@ -288,12 +294,11 @@ def model_node(state: AgentState) -> AgentState:
                 - Conservative (Low Risk Appetite): Risk Appetite score ≤ 10 → prefer FDs, Bonds, low stock exposure, high DI ratio. 
                 - Balanced (Moderate Risk Appetite): Risk Appetite score between 11–25 → mix of Equity + Debt SIPs, moderate FD holdings, average DI ratio. 
                 - Aggressive (High Risk Appetite): Risk Appetite score > 25 → equity-focused, high stock allocation, active SIPs, strong engagement. 
-                - Ask the human user, Do you want me to segment these customers?                     
+                - Ask the human user, Do you want me to segment these customers?     
                     -If the user agrees or says anything like "yes", "yes please", "yes, I would like to", "sure", "ok", "okay", "yep", "yeah":
-                    -> you must call the tool named segment_customers.
-                    -> This tool should always be applied on the CUSTOMER data table that is stored in the schema.
-                    -> Do not apologize or say you cannot. Do not give a fallback message.
-                                  
+                        -> you must call the tool named seg_cust.
+
+                                                      
             If the user asks about "product suggestion based on customer's risk profile" 
                 - Read all available investment products from 'pd_description' documentation. 
     
@@ -302,6 +307,11 @@ def model_node(state: AgentState) -> AgentState:
         )
     )
     
+    # -If the user agrees or says anything like "yes", "yes please", "yes, I would like to", "sure", "ok", "okay", "yep", "yeah":
+                    # -> you must call the tool named segment_customers.
+                    # -> This tool should always be applied on the CUSTOMER data table that is stored in the schema.
+                    # -> Do not apologize or say you cannot. Do not give a fallback message.
+
     # - prefer 'CUSTOMER_segmented' table as a knowledge base.
     # - Suggest products based on the customer’s risk appetite classification (High, Low, High).  
     
@@ -375,6 +385,7 @@ app = graph.compile()
 
 
 ############################################################################################### 
+
 
 
 
