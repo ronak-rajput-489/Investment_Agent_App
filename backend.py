@@ -288,16 +288,15 @@ def model_node(state: AgentState) -> AgentState:
                 - Conservative (Low Risk Appetite): Risk Appetite score ≤ 10 → prefer FDs, Bonds, low stock exposure, high DI ratio. 
                 - Balanced (Moderate Risk Appetite): Risk Appetite score between 11–25 → mix of Equity + Debt SIPs, moderate FD holdings, average DI ratio. 
                 - Aggressive (High Risk Appetite): Risk Appetite score > 25 → equity-focused, high stock allocation, active SIPs, strong engagement. 
-                - Ask the human user, Do you want me to segment these customers? 
+                - Ask the human user, Do you want me to segment these customers?                     
                     -If the user agrees or says anything like "yes", "yes please", "yes, I would like to", "sure", "ok", "okay", "yep", "yeah":
-                    → you must ALWAYS call the 'segment_customers' tool with the argument {"table_name": "CUSTOMER"}.
-                    Do not apologize or say you cannot. Do not give a fallback message.
+                    -> you must call the tool named segment_customers.
+                    -> This tool should always be applied on the CUSTOMER data table that is stored in the schema.
+                    -> Do not apologize or say you cannot. Do not give a fallback message.
                                   
             If the user asks about "product suggestion based on customer's risk profile" 
                 - Read all available investment products from 'pd_description' documentation. 
     
-                
-                              
             Always make your response **insightful and actionable**.
         """
         )
@@ -376,6 +375,7 @@ app = graph.compile()
 
 
 ############################################################################################### 
+
 
 
 
