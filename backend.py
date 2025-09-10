@@ -289,7 +289,7 @@ def model_node(state: AgentState) -> AgentState:
                 - Balanced (Moderate Risk Appetite): Risk Appetite score between 11–25 → mix of Equity + Debt SIPs, moderate FD holdings, average DI ratio. 
                 - Aggressive (High Risk Appetite): Risk Appetite score > 25 → equity-focused, high stock allocation, active SIPs, strong engagement. 
                 - Ask the human user, Do you want me to segment these customers? 
-                    -If the user agrees or says anything like "yes", "yes please", "I would like to", "sure", "ok", "okay", "yep", "yeah":
+                    -If the user agrees or says anything like "yes", "yes please", "yes, I would like to", "sure", "ok", "okay", "yep", "yeah":
                     → you must ALWAYS call the 'segment_customers' tool with the argument {"table_name": "CUSTOMER"}.
                     Do not apologize or say you cannot. Do not give a fallback message.
                                   
@@ -376,5 +376,6 @@ app = graph.compile()
 
 
 ############################################################################################### 
+
 
 
