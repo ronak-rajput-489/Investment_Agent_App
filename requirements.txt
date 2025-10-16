@@ -13,3 +13,5 @@ snowflake-connector-python==3.12.3
 matplotlib
 faiss-gpu
 faiss-cpu
+streamlit-authenticator
+cryptography
