@@ -38,62 +38,62 @@ private_key_path = os.getenv("SNOWFLAKE_PRIVATE_KEY")
 
 #############################################################################################
 
-# # 🧠 1. Create a LangGraph-compatible state
-# class AgentState(TypedDict):
-#     messages: Annotated[Sequence[BaseMessage], add_messages]
+# 🧠 1. Create a LangGraph-compatible state
+class AgentState(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]
 
-# # Snowflake Engine:
-# engine = create_engine(
-#     f"snowflake://{snowflake_user}:{snowflake_pass}@{snowflake_acct}/"
-#     f"{snowflake_db}/{snowflake_schema}?warehouse={snowflake_wh}&role={snowflake_role}"
-# )
+# Snowflake Engine:
+engine = create_engine(
+    f"snowflake://{snowflake_user}:{snowflake_pass}@{snowflake_acct}/"
+    f"{snowflake_db}/{snowflake_schema}?warehouse={snowflake_wh}&role={snowflake_role}"
+)
 # # 🧠 State
 # class AgentState(TypedDict):
 #     messages: Annotated[Sequence, add_messages]
 
 ##########################################################################################################
 
-# 🧠 1. Create a LangGraph-compatible state
-class AgentState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], add_messages]
+# # 🧠 1. Create a LangGraph-compatible state
+# class AgentState(TypedDict):
+#     messages: Annotated[Sequence[BaseMessage], add_messages]
     
-# ---------------- Build Engine ----------------
-engine = None
+# # ---------------- Build Engine ----------------
+# engine = None
  
-try:
-    if private_key_path and os.path.exists(private_key_path):
-        # ✅ Load private key for key-pair authentication
-        with open(private_key_path, "rb") as key:
-            p_key = serialization.load_pem_private_key(
-                key.read(),
-                password=None,  # or passphrase if you encrypted it
-                backend=default_backend()
-            )
+# try:
+#     if private_key_path and os.path.exists(private_key_path):
+#         # ✅ Load private key for key-pair authentication
+#         with open(private_key_path, "rb") as key:
+#             p_key = serialization.load_pem_private_key(
+#                 key.read(),
+#                 password=None,  # or passphrase if you encrypted it
+#                 backend=default_backend()
+#             )
  
-        pkb = p_key.private_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        )
+#         pkb = p_key.private_bytes(
+#             encoding=serialization.Encoding.DER,
+#             format=serialization.PrivateFormat.PKCS8,
+#             encryption_algorithm=serialization.NoEncryption()
+#         )
  
-        print("[INFO] Using RSA key-pair authentication...")
-        engine = create_engine(
-            f"snowflake://{snowflake_user}@{snowflake_acct}/"
-            f"{snowflake_db}/{snowflake_schema}?warehouse={snowflake_wh}&role={snowflake_role}",
-            connect_args={
-                "private_key": pkb
-            }
-        )
-    else:
-        # ✅ Fallback to username + password
-        print("[INFO] Using Username + Password authentication...")
-        engine = create_engine(
-            f"snowflake://{snowflake_user}:{snowflake_pass}@{snowflake_acct}/"
-            f"{snowflake_db}/{snowflake_schema}?warehouse={snowflake_wh}&role={snowflake_role}"
-        )
+#         print("[INFO] Using RSA key-pair authentication...")
+#         engine = create_engine(
+#             f"snowflake://{snowflake_user}@{snowflake_acct}/"
+#             f"{snowflake_db}/{snowflake_schema}?warehouse={snowflake_wh}&role={snowflake_role}",
+#             connect_args={
+#                 "private_key": pkb
+#             }
+#         )
+#     else:
+#         # ✅ Fallback to username + password
+#         print("[INFO] Using Username + Password authentication...")
+#         engine = create_engine(
+#             f"snowflake://{snowflake_user}:{snowflake_pass}@{snowflake_acct}/"
+#             f"{snowflake_db}/{snowflake_schema}?warehouse={snowflake_wh}&role={snowflake_role}"
+#         )
  
-except Exception as e:
-    raise RuntimeError(f"❌ Failed to initialize Snowflake engine: {e}")
+# except Exception as e:
+#     raise RuntimeError(f"❌ Failed to initialize Snowflake engine: {e}")
 
 
 ##########################################################################################################
